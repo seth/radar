@@ -1,11 +1,10 @@
 -module(hexutil).
--compile(export_all).
--define(TEST, true).
 
--ifdef(TEST).
+-export([hex_str_to_bytes/1, to_hex_str/1]).
 -include_lib("eunit/include/eunit.hrl").
--endif.
 
+%% @spec hex_str_to_bytes(string()) -> binary()
+%% @doc Convert a hex string to a binary.
 hex_str_to_bytes(L) ->
     hex_str_to_bytes(L, <<>>).
 hex_str_to_bytes([H1, H2 | T]=L, Ans) when length(L) rem 2 =:= 0 ->
@@ -16,18 +15,20 @@ hex_str_to_bytes([H1, H2 | T]=L, Ans) when length(L) rem 2 =:= 0 ->
 hex_str_to_bytes([], Ans) ->
     Ans.
 
-to_hex_str(<<>>) ->
-    [];
-to_hex_str(<<N1:4, N2:4, BinRest/binary>>) ->
-    [hex_chr(N1), hex_chr(N2) | to_hex_str(BinRest)].
+%% this is more concise, but not tail-recursive (I think)
+%% to_hex_str2(<<>>) ->
+%%     [];
+%% to_hex_str2(<<N1:4, N2:4, BinRest/binary>>) ->
+%%     [hex_chr(N1), hex_chr(N2) | to_hex_str(BinRest)].
 
-to_hex_str2(B) ->
-    to_hex_str2(B, []).
-to_hex_str2(<<>>, Ans) ->
+%% @spec to_hex_str(binary()) -> string()
+%% @doc Convert a binary to a hex string.
+to_hex_str(B) ->
+    to_hex_str(B, []).
+to_hex_str(<<>>, Ans) ->
     lists:reverse(Ans);
-to_hex_str2(<<N1:4, N2:4, BinRest/binary>>, Ans) ->
-    NewAns = [hex_chr(N2), hex_chr(N1) | Ans],
-    to_hex_str2(BinRest, NewAns).
+to_hex_str(<<N1:4, N2:4, BinRest/binary>>, Ans) ->
+    to_hex_str(BinRest, [hex_chr(N2), hex_chr(N1) | Ans]).
 
 hex_chr(N) when N >= 0, N < 10 ->
     $0 + N;
@@ -41,7 +42,7 @@ hex_chr_to_i(N) when N >= $0, N < $0 + 10 ->
 hex_chr_to_i(N) when N >= $0 + 10, $f >= N ->
     N + 10 - $a.
 
--ifdef(TEST).
+%% test functions
 hex_chr_test_() ->
     [
      ?_assert("3" =:= [hex_chr(3)]),
@@ -70,4 +71,3 @@ to_hex_str_md5_round_trip_test_() ->
     B = erlang:md5("hello\n"),
     ?_assert(B =:= hex_str_to_bytes(to_hex_str(B))).
 
--endif.
