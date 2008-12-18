@@ -1,0 +1,12 @@
+* Investigate using Rake
+These two links have some details on folks successfully using Rake to
+build Erlang projects and run eunit tests.
+
+- http://21ccw.blogspot.com/2008/04/using-rake-for-erlang-unit-testing.html
+- http://seangeo.blogspot.com/2007/09/building-erlang-with-rake.html
+
+* Define service record
+* Write an OTP server that does basic registration and lookup
+* Figure out mochiweb
+* Learn XML parsing, building
+* Learn JSON parsing, building
