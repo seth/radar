@@ -1,6 +1,6 @@
 require 'rake/clean'
 
-ERL = "erl -boot start_clean"
+ERL = "erl -boot start_clean -noshell"
 INCLUDE = "include"
 ERLC_FLAGS = "-I#{INCLUDE} +warn_unused_vars +warn_unused_import"
 
@@ -21,6 +21,7 @@ task :test => [:compile] do
   OBJ.each do |obj|
     obj[%r{.*/(.*).beam}]
     mod = $1
+    puts "#{mod}..."
     test_output = `#{ERL} -pa ebin -run #{mod} test -run init stop`
     puts test_output
   end

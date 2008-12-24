@@ -3,7 +3,6 @@
 start()
 register({type, url}) -> ok | error
 find({type}) -> {type, url} | error
-
 * Figure out mochiweb
 * Learn XML parsing, building
 * Learn JSON parsing, building

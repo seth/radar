@@ -10,7 +10,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, register/1, find/1]).
+-export([start_link/0, start/0, stop/0, register/1, find/1, test/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -26,6 +26,11 @@
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
+start() ->
+    start_link().
+stop() ->
+    gen_server:call(?MODULE, stop).
+
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
@@ -69,6 +74,8 @@ handle_call({find, Name}, _From, State) ->
                 false -> false
             end,
     {reply, Reply, State};
+handle_call(stop, _From, State) ->
+    {stop, normal, stopped, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -111,3 +118,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+
+test() ->
+    io:format("ok~n"),
+    ok.
