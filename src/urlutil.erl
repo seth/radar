@@ -1,13 +1,25 @@
--module(urlutil).
+%% @author Seth Falcon <seth@userprimary.net>
+%% @copyright 2009 Seth Falcon
 
+%% @doc URL parsing utilities
+-module(urlutil).
+-author('seth@userprimary.net').
 %%-export([parse_url/1]).
 -compile(export_all).
 -include_lib("eunit/include/eunit.hrl").
+-import(lists, [map/2]).
+-import(string, [join/2, substr/3, substr/2, str/2, chr/2, tokens/2]).
 
-%% @spec parse_url(Url) -> {Scheme, Host, Port, Path, Params}
-%% @doc Parses a URL into scheme, host, port, path, and query parameters.
-%% all values are strings except port (integer) and query parameters, a
-%% list of tuples.
+%% @spec parse_url(Url) -> {Scheme, Host, Port, Path, Params} |
+%%                         {error, Why::atom(), Url}
+%%     Scheme = string(),
+%%     Host = string(),
+%%     Port = integer(),
+%%     Path = string(),
+%%     Params = [{Key::string(), Value::string()}]
+%%
+%% @doc Parses a URL into scheme, host, port, path, and query
+%% parameters.  If no port is found, Port will be zero.
 parse_url(Url) ->
     case parse_scheme(Url) of
         {ok, Scheme, Rest} ->
@@ -21,6 +33,26 @@ parse_url(Url) ->
         {error, Why, _} ->
             {error, Why, Url}
     end.
+
+%% @spec make_url(UrlSpec) -> string()
+%%    UrlSpec = {Scheme, Host, Port, Path, Params}
+%%
+%% @doc Converts a parsed URL into a string.  See parse_url/1 for the
+%% expected format.
+make_url({Scheme, Host, Port, Path, Params}) ->
+    PortStr = if
+                  Port > 0 -> ":" ++ integer_to_list(Port);
+                  true -> ""
+              end,
+    ParamStr = join_query_params(Params),
+    lists:concat([Scheme, "://", Host, PortStr, Path, ParamStr]).
+
+join_query_params([]) ->
+    [];
+join_query_params(Params) ->
+    "?" ++
+        join(map(fun({K, V}) -> lists:concat([K, "=", V]) end,
+                              Params), "&").
 
 parse_host(Url) ->
     parse_host(Url, [], []).
@@ -43,19 +75,19 @@ parse_host([C|Rest], PortAcc, Acc) when length(PortAcc) =:= 0 ->
     parse_host(Rest, PortAcc, [C|Acc]).
 
 parse_scheme(Url) ->
-    Pos = string:str(Url, "://"),
+    Pos = str(Url, "://"),
     if Pos > 1 ->
-            {ok, string:substr(Url, 1, Pos - 1), string:substr(Url, Pos + 3)};  
+            {ok, substr(Url, 1, Pos - 1), substr(Url, Pos + 3)};  
        true ->
             {error, no_scheme, Url}
     end.
 
 parse_params(Url) ->
-    Pos = string:chr(Url, $?),
+    Pos = chr(Url, $?),
     if Pos > 0 ->
-            Params = lists:map(fun([K|[$=|V]]) -> {[K], V} end,
-                               string:tokens(string:substr(Url, Pos + 1), "&")),
-            {string:substr(Url, 1, Pos - 1), Params};
+            Params = map(fun([K|[$=|V]]) -> {[K], V} end,
+                               tokens(substr(Url, Pos + 1), "&")),
+            {substr(Url, 1, Pos - 1), Params};
        true -> {Url, []}
     end.
 
@@ -83,4 +115,5 @@ parse_host_test_() ->
      ?_assertMatch({error,bad_port,"f.com:x"}, parse_host("f.com:x")),
      ?_assertMatch({error,bad_port,"f.com:y2/"}, parse_host("f.com:1y2/"))
     ].
+
 
