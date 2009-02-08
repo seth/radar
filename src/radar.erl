@@ -11,12 +11,22 @@
 
 %% API
 -export([start_link/0, start/0, stop/0, register/1, find/1, test/0]).
+-export([setup_disk_db/0, init_db/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
-%% -record(service, {name = "", url = ""}).
+-record(service, {id = "",
+                  type = "",
+                  group = "",
+                  proto = "http",
+                  host = "",
+                  port = 80,
+                  path = "",
+                  attrs = [],
+                  expiry = 0,
+                  lease = 300}).
 -record(state, {services = []}).
 
 %%====================================================================
@@ -40,6 +50,22 @@ register(Service) ->
 find(Name) ->
     gen_server:call(?MODULE, {find, Name}).
 
+setup_disk_db() ->
+    Result = mnesia:create_schema([node()]),
+    {_, {_, {Status,_}}} = Result,
+    case Status of
+        already_exists ->
+            {ok, "mnesia already initialized", node()};
+        ok ->
+            {ok, "mnesia initialized", node()};
+        _ -> {error, Result, node()}
+    end.
+
+init_db() ->
+    mnesia:start(),
+    mnesia:create_table(services,
+                        [{attributes, record_info(fields, service)}]).
+
 
 %%====================================================================
 %% gen_server callbacks
@@ -53,6 +79,7 @@ find(Name) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
+    init_db(),
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------

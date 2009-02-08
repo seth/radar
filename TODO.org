@@ -1,4 +1,24 @@
 * Define service record
+| Name   | Description                    | Type           | Default     |
+|--------+--------------------------------+----------------+-------------|
+| id     | hash of type and URL           | string         | -           |
+| type   | name of service type           | string         | -           |
+| group  | group name                     | string         | ""          |
+| proto  | protocal                       | string         | "http"      |
+| host   | host name                      | string         | -           |
+| port   | port number                    | int            | 80          |
+| path   | service path                   | string         | ""          |
+| attrs  | key/value attributes           | list of {k, v} | []          |
+| expiry | expiration time sec from epoch | long           | 0           |
+| lease  | lease time in seconds          | int            | 300         |
+
+
+  
+
+Name	Description
+id	unique id based on hash of service type and URL
+
+  
 * Write an OTP server that does basic registration and lookup
 start()
 register({type, url}) -> ok | error
