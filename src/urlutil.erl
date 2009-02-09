@@ -1,11 +1,10 @@
+%% @doc URL parsing utilities
 %% @author Seth Falcon <seth@userprimary.net>
 %% @copyright 2009 Seth Falcon
-
-%% @doc URL parsing utilities
 -module(urlutil).
 -author('seth@userprimary.net').
-%%-export([parse_url/1]).
--compile(export_all).
+-vsn(1).
+-export([parse_url/1, make_url/1]).
 -include_lib("eunit/include/eunit.hrl").
 -import(lists, [map/2]).
 -import(string, [join/2, substr/3, substr/2, str/2, chr/2, tokens/2]).
@@ -79,7 +78,7 @@ parse_scheme(Url) ->
     if Pos > 1 ->
             {ok, substr(Url, 1, Pos - 1), substr(Url, Pos + 3)};  
        true ->
-            {error, no_scheme, Url}
+            {error, bad_scheme, Url}
     end.
 
 parse_params(Url) ->
@@ -102,8 +101,8 @@ parse_scheme_test_() ->
     [
      ?_assertMatch({ok, "http", "foo.bar"}, parse_scheme("http://foo.bar")),
      ?_assertMatch({ok, "http", ""}, parse_scheme("http://")),
-     ?_assertMatch({error, no_scheme, _}, parse_scheme("blah")),
-     ?_assertMatch({error, no_scheme, _}, parse_scheme("://blah"))
+     ?_assertMatch({error, bad_scheme, _}, parse_scheme("blah")),
+     ?_assertMatch({error, bad_scheme, _}, parse_scheme("://blah"))
     ].
 
 parse_host_test_() ->
@@ -116,4 +115,21 @@ parse_host_test_() ->
      ?_assertMatch({error,bad_port,"f.com:y2/"}, parse_host("f.com:1y2/"))
     ].
 
+parse_url_test_() ->
+    [
+     ?_assertMatch({"http", "foo.com", 123, "/bar", [{"a", "1"}, {"b", "2"}]},
+                   parse_url("http://foo.com:123/bar?a=1&b=2")),
+     ?_assertMatch({error, bad_scheme, _},
+                   parse_url("/no/scheme/here")),
+     ?_assertMatch({error, bad_port, _},
+                   parse_url("ftp://f.c:x/not/a/number"))
+    ].
 
+make_url_test_() ->
+    [
+     ?_assertMatch("http://foo.com:123/bar?a=1&b=2",
+                   make_url({"http", "foo.com", 123, "/bar",
+                             [{"a", "1"}, {"b", "2"}]})),
+     ?_assertMatch("http://foo.com:123/bar?a=1&b=2",
+                   make_url(parse_url("http://foo.com:123/bar?a=1&b=2")))
+    ].
