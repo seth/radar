@@ -74,12 +74,13 @@ parse_host([C|Rest], PortAcc, Acc) when length(PortAcc) =:= 0 ->
     parse_host(Rest, PortAcc, [C|Acc]).
 
 parse_scheme(Url) ->
-    Pos = str(Url, "://"),
-    if Pos > 1 ->
-            {ok, substr(Url, 1, Pos - 1), substr(Url, Pos + 3)};  
-       true ->
-            {error, bad_scheme, Url}
-    end.
+    parse_scheme(Url, []).
+parse_scheme([], Acc) ->
+    {error, bad_scheme, lists:reverse(Acc)};
+parse_scheme([$:, $/, $/|Rest], Acc) when length(Rest) > 0, length(Acc) > 0 ->
+    {ok, lists:reverse(Acc), Rest};
+parse_scheme([C|Rest], Acc) ->
+    parse_scheme(Rest, [C|Acc]).
 
 parse_params(Url) ->
     Pos = chr(Url, $?),
@@ -98,12 +99,14 @@ port_from_acc(PortAcc) ->
     end.
 
 parse_scheme_test_() ->
-    [
-     ?_assertMatch({ok, "http", "foo.bar"}, parse_scheme("http://foo.bar")),
-     ?_assertMatch({ok, "http", ""}, parse_scheme("http://")),
-     ?_assertMatch({error, bad_scheme, _}, parse_scheme("blah")),
-     ?_assertMatch({error, bad_scheme, _}, parse_scheme("://blah"))
-    ].
+    Tests = [
+             {"http://foo.bar", {ok, "http", "foo.bar"}},
+             {"http://", {error, bad_scheme, "http://"}},
+             {"blah", {error, bad_scheme, "blah"}},
+             {"://", {error, bad_scheme, "://"}},
+             {"", {error, bad_scheme, ""}}
+            ],
+    [?_assertMatch(Want, parse_scheme(In)) || {In, Want} <- Tests].
 
 parse_host_test_() ->
     [
