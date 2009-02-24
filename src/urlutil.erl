@@ -109,30 +109,31 @@ parse_scheme_test_() ->
     [?_assertMatch(Want, parse_scheme(In)) || {In, Want} <- Tests].
 
 parse_host_test_() ->
-    [
-     ?_assertMatch({"foo.bar.com",0,[]}, parse_host("foo.bar.com")),
-     ?_assertMatch({"foo.bar.com",123,[]}, parse_host("foo.bar.com:123")),
-     ?_assertMatch({"foo.bar.com",0,"/a/b"}, parse_host("foo.bar.com/a/b")),
-     ?_assertMatch({"f.com",4,"/a/b"}, parse_host("f.com:4/a/b")),
-     ?_assertMatch({error,bad_port,"f.com:x"}, parse_host("f.com:x")),
-     ?_assertMatch({error,bad_port,"f.com:y2/"}, parse_host("f.com:1y2/"))
-    ].
+    Tests = [
+             {"foo.bar.com", {"foo.bar.com",0,[]}},
+             {"foo.bar.com:123", {"foo.bar.com",123,[]}},
+             {"foo.bar.com/a/b", {"foo.bar.com",0,"/a/b"}},
+             {"f.com:4/a/b", {"f.com",4,"/a/b"}},
+             {"f.com:x", {error,bad_port,"f.com:x"}},
+             {"f.com:1y2/", {error,bad_port,"f.com:y2/"}}
+            ],
+    [?_assertMatch(Want, parse_host(In)) || {In, Want} <- Tests].
 
 parse_url_test_() ->
-    [
-     ?_assertMatch({"http", "foo.com", 123, "/bar", [{"a", "1"}, {"b", "2"}]},
-                   parse_url("http://foo.com:123/bar?a=1&b=2")),
-     ?_assertMatch({error, bad_scheme, _},
-                   parse_url("/no/scheme/here")),
-     ?_assertMatch({error, bad_port, _},
-                   parse_url("ftp://f.c:x/not/a/number"))
-    ].
+    Tests = [
+             {"http://foo.com:123/bar?a=1&b=2",
+               {"http", "foo.com", 123, "/bar", [{"a", "1"}, {"b", "2"}]}},
+             {"/no/scheme/here", {error, bad_scheme, "/no/scheme/here"}},
+             {"ftp://f.c:x/not/a/number",
+               {error, bad_port, "ftp://f.c:x/not/a/number"}}
+            ],
+    [?_assertMatch(Want, parse_url(In)) || {In, Want} <- Tests].
 
 make_url_test_() ->
-    [
-     ?_assertMatch("http://foo.com:123/bar?a=1&b=2",
-                   make_url({"http", "foo.com", 123, "/bar",
-                             [{"a", "1"}, {"b", "2"}]})),
-     ?_assertMatch("http://foo.com:123/bar?a=1&b=2",
-                   make_url(parse_url("http://foo.com:123/bar?a=1&b=2")))
-    ].
+    Tests = [
+             {{"http", "foo.com", 123, "/bar", [{"a", "1"}, {"b", "2"}]},
+               "http://foo.com:123/bar?a=1&b=2"},
+             {parse_url("http://foo.com:123/bar?a=1&b=2"),
+               "http://foo.com:123/bar?a=1&b=2"}
+            ],
+    [?_assertMatch(Want, make_url(In)) || {In, Want} <- Tests].
