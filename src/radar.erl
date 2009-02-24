@@ -6,9 +6,11 @@
 -vsn(1).
 -author('seth@userprimary.net').
 -behaviour(gen_server).
-
+-import(urlutil, [parse_url/1, make_url/1]).
 %% API
--export([start_link/0, start/0, stop/0, register/1, find/1, test/0]).
+-export([start_link/0, start/0, stop/0, register/1, find_one/1,
+         find_one/2, test/0]).
+-export([make_service/4, service_url/1]).
 -export([setup_disk_db/0, init_db/0]).
 
 %% gen_server callbacks
@@ -42,11 +44,13 @@ stop() ->
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-register(Service) ->
+register(Service) when is_record(Service, service) ->
     gen_server:call(?MODULE, {register, Service}).
 
-find(Name) ->
-    gen_server:call(?MODULE, {find, Name}).
+find_one(Type) ->
+    find_one(Type, "").
+find_one(Type, Group) ->
+    gen_server:call(?MODULE, {find_one, Type, Group}).
 
 setup_disk_db() ->
     Result = mnesia:create_schema([node()]),
@@ -63,6 +67,25 @@ init_db() ->
     mnesia:start(),
     mnesia:create_table(services,
                         [{attributes, record_info(fields, service)}]).
+
+%% @spec make_service(Type, Group, Url, Attrs) -> #service{}
+%% @doc Create a service record
+make_service(Type, Group, Url, Attrs) ->
+    UrlParts = parse_url(Url),
+    case UrlParts of
+        {Scheme, Host, Port, Path, _} ->
+            #service{type=Type, group=Group, proto=Scheme,
+                    host=Host, port=Port, path=Path,
+                     attrs=Attrs};
+        {error, Reason, _} ->
+            {error, bad_url, Reason, Url}
+    end.
+
+%% @spec service_url(Service) -> Url
+%% @doc Return the URL of the specified service record.
+service_url(Service) when is_record(Service, service) ->
+    #service{proto=Scheme, host=Host, port=Port, path=Path} = Service,
+    make_url({Scheme, Host, Port, Path, []}).
 
 
 %%====================================================================
@@ -90,10 +113,11 @@ init([]) ->
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
 handle_call({register, Service}, _From, State) ->
+    %% FIXME: handle dups, ID generation
     State2 = #state{services = [Service | State#state.services]},
     {reply, ok, State2};
-handle_call({find, Name}, _From, State) ->
-    Found = lists:keysearch(Name, 1, State#state.services),
+handle_call({find_one, Type, _}, _From, State) ->   % FIXME: handle Group
+    Found = lists:keysearch(Type, 3, State#state.services),
     Reply = case Found of
                 {value, Service} -> Service;
                 false -> false
