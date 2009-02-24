@@ -1,12 +1,10 @@
-%%%-------------------------------------------------------------------
-%%% File    : radar.erl
-%%% Author  : Seth Falcon <seth@userprimary.net>
-%%% Description : 
-%%%
-%%% Created : 17 Dec 2008 by Seth Falcon <seth@userprimary.net>
+%% @doc Radar, simple service discovery
+%% @author Seth Falcon <seth@userprimary.net>
+%% @copyright 2008-2009 Seth Falcon
 %%%-------------------------------------------------------------------
 -module(radar).
-
+-vsn(1).
+-author('seth@userprimary.net').
 -behaviour(gen_server).
 
 %% API
