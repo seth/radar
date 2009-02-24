@@ -7,7 +7,7 @@
 -export([parse_url/1, make_url/1]).
 -include_lib("eunit/include/eunit.hrl").
 -import(lists, [map/2]).
--import(string, [join/2, substr/3, substr/2, str/2, chr/2, tokens/2]).
+-import(string, [join/2, substr/3, substr/2, chr/2, tokens/2]).
 
 %% @spec parse_url(Url) -> {Scheme, Host, Port, Path, Params} |
 %%                         {error, Why::atom(), Url}
