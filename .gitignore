@@ -1,3 +1,5 @@
 *.beam
 ebin
 *~
+scratch/
+/erl_crash.dump
