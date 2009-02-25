@@ -7,6 +7,8 @@
 -author('seth@userprimary.net').
 -behaviour(gen_server).
 -import(urlutil, [parse_url/1, make_url/1]).
+-import(hexutil, [to_hex_str/1]).
+-import(erlang, [md5/1]).
 -include_lib("stdlib/include/qlc.hrl").
 %% API
 -export([start_link/0, start/0, stop/0, register/1, find_one/1,
@@ -57,8 +59,9 @@ setup_disk_db() ->
     end.
 
 init_db() ->
+    mnesia:create_schema([node()]),
     mnesia:start(),
-    mnesia:create_table(services,
+    mnesia:create_table(service,
                         [{attributes, record_info(fields, service)}]).
 
 %% @spec make_service(Type, Group, Url, Attrs) -> #service{}
@@ -67,7 +70,8 @@ make_service(Type, Group, Url, Attrs) ->
     UrlParts = parse_url(Url),
     case UrlParts of
         {Scheme, Host, Port, Path, _} ->
-            #service{type=Type, group=Group, proto=Scheme,
+            Id = make_service_id(Type, Group, Url),
+            #service{id=Id, type=Type, group=Group, proto=Scheme,
                     host=Host, port=Port, path=Path,
                      attrs=Attrs};
         {error, Reason, _} ->
@@ -80,6 +84,8 @@ service_url(Service) when is_record(Service, service) ->
     #service{proto=Scheme, host=Host, port=Port, path=Path} = Service,
     make_url({Scheme, Host, Port, Path, []}).
 
+make_service_id(Type, Group, Url) ->
+    to_hex_str(md5(lists:flatten([Type, Group, Url]))).
 
 %%====================================================================
 %% gen_server callbacks
