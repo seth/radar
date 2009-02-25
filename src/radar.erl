@@ -7,6 +7,7 @@
 -author('seth@userprimary.net').
 -behaviour(gen_server).
 -import(urlutil, [parse_url/1, make_url/1]).
+-include_lib("stdlib/include/qlc.hrl").
 %% API
 -export([start_link/0, start/0, stop/0, register/1, find_one/1,
          find_one/2, test/0]).
@@ -17,16 +18,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--record(service, {id = "",
-                  type = "",
-                  group = "",
-                  proto = "http",
-                  host = "",
-                  port = 80,
-                  path = "",
-                  attrs = [],
-                  expiry = 0,
-                  lease = 300}).
+-include("service.hrl").
+
 -record(state, {services = []}).
 
 %%====================================================================
@@ -171,3 +164,4 @@ code_change(_OldVsn, State, _Extra) ->
 test() ->
     io:format("ok~n"),
     ok.
+             
