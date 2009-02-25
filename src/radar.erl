@@ -118,8 +118,8 @@ handle_call({find_one, Type, _}, _From, State) ->   % FIXME: handle Group
     {reply, Reply, State};
 handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
-handle_call(_Request, _From, State) ->
-    Reply = ok,
+handle_call(Request, _From, State) ->
+    Reply = {unknown_request, Request},
     {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
