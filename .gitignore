@@ -3,3 +3,4 @@ ebin
 *~
 scratch/
 /erl_crash.dump
+Mnesia.*
