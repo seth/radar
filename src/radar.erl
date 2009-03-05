@@ -11,10 +11,8 @@
 -import(erlang, [md5/1]).
 -include_lib("stdlib/include/qlc.hrl").
 %% API
--export([start_link/0, start/0, stop/0, register/1, find_one/1,
-         find_one/2, test/0]).
+-export([start_link/0, start/0, stop/0, register/1, find/3, test/0]).
 -export([make_service/4, service_url/1]).
--export([setup_disk_db/0, init_db/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -42,27 +40,8 @@ start_link() ->
 register(Service) when is_record(Service, service) ->
     gen_server:call(?MODULE, {register, Service}).
 
-find_one(Type) ->
-    find_one(Type, "").
-find_one(Type, Group) ->
-    gen_server:call(?MODULE, {find_one, Type, Group}).
-
-setup_disk_db() ->
-    Result = mnesia:create_schema([node()]),
-    {_, {_, {Status,_}}} = Result,
-    case Status of
-        already_exists ->
-            {ok, "mnesia already initialized", node()};
-        ok ->
-            {ok, "mnesia initialized", node()};
-        _ -> {error, Result, node()}
-    end.
-
-init_db() ->
-    mnesia:create_schema([node()]),
-    mnesia:start(),
-    mnesia:create_table(service,
-                        [{attributes, record_info(fields, service)}]).
+find(Type, Group, Attrs) ->
+    gen_server:call(?MODULE, {find, Type, Group, Attrs}).
 
 %% @spec make_service(Type, Group, Url, Attrs) -> #service{}
 %% @doc Create a service record
@@ -99,7 +78,7 @@ make_service_id(Type, Group, Url) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([]) ->
-    init_db(),
+    radar_db:start(),
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -112,17 +91,13 @@ init([]) ->
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
 handle_call({register, Service}, _From, State) ->
-    %% FIXME: handle dups, ID generation
-    State2 = #state{services = [Service | State#state.services]},
-    {reply, ok, State2};
-handle_call({find_one, Type, _}, _From, State) ->   % FIXME: handle Group
-    Found = lists:keysearch(Type, 3, State#state.services),
-    Reply = case Found of
-                {value, Service} -> Service;
-                false -> false
-            end,
-    {reply, Reply, State};
+    radar_db:add(Service),
+    {reply, ok, State};
+handle_call({find, Type, Group, Attrs}, _From, State) ->
+    Found = radar_db:find(Type, Group, Attrs),
+    {reply, Found, State};
 handle_call(stop, _From, State) ->
+    radar_db:stop(),
     {stop, normal, stopped, State};
 handle_call(Request, _From, State) ->
     Reply = {unknown_request, Request},

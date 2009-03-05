@@ -1,9 +1,9 @@
 -module(radar_db).
 -import(lists, [map/2, sort/1]).
 
--compile(export_all).
-%%-export([init_db/0, start/0, add/1, remove/1]).
-%%-export([find_all/0, find/3]).
+%%-compile(export_all).
+-export([init_db/0, start/0, stop/0]).
+-export([add/1, remove/1, find_all/0, find/3]).
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("stdlib/include/qlc.hrl").
@@ -19,14 +19,8 @@ start() ->
     mnesia:start(),
     mnesia:wait_for_tables([service], 20000).
 
-has_attr({N, V}, Attrs) ->
-    lists:member({N, V}, Attrs).
-
-matches_attrs([], _Have) ->
-    true;
-matches_attrs(Want, Have) ->
-    Member = map(fun(X) -> has_attr(X, Have) end, Want),
-    lists:foldr(fun(X, S) -> (X =:= true) and S end, true, Member).
+stop() ->
+    mnesia:stop().
 
 add(Service) when is_record(Service, service) ->
     F = fun() -> mnesia:write(Service) end,
@@ -57,10 +51,23 @@ find(Type, Group, Attrs) ->
                   X#service.group =:= Group,
                   matches_attrs(Attrs, X#service.attrs)])).
 
+%% private
+
+has_attr({N, V}, Attrs) ->
+    lists:member({N, V}, Attrs).
+
+matches_attrs([], _Have) ->
+    true;
+matches_attrs(Want, Have) ->
+    Member = map(fun(X) -> has_attr(X, Have) end, Want),
+    lists:foldr(fun(X, S) -> (X =:= true) and S end, true, Member).
+
 do(Q) ->
     F = fun() -> qlc:e(Q) end,
     {atomic, Val} = mnesia:transaction(F),
     Val.
+
+%% tests
 
 add_and_find_test_() ->
     SortedUrls = fun(L) ->
@@ -107,7 +114,3 @@ matches_attrs_test_() ->
             ],
     [ ?_assertMatch(Expect, matches_attrs(Want, Have))
       || {Want, Have, Expect} <- Tests ].
-    
-
-    
-    
