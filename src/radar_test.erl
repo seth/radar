@@ -3,6 +3,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 roundtrip_test() ->
+    radar_db:init_db(),
     radar:start(),
     S1 = radar:make_service("foo", "g1", "http://foo:123", []),
     S2 = radar:make_service("bar", "g1", "http://bar", []),

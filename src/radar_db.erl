@@ -71,6 +71,7 @@ do(Q) ->
 %% tests
 
 add_and_remove_test() ->
+    init_db(),
     start(),
     mnesia:clear_table(service),
     Services = [
@@ -86,6 +87,7 @@ add_and_remove_test() ->
     ?assertEqual(0, length(find([], [], []))).
     
 add_and_find_test_() ->
+    init_db(),
     SortedUrls = fun(L) ->
                          sort(map(fun radar:service_url/1, L)) end,
     start(),

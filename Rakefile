@@ -22,7 +22,10 @@ task :test => [:compile] do
     obj[%r{.*/(.*).beam}]
     mod = $1
     puts "#{mod}..."
-    test_output = `#{ERL} -pa ebin -run #{mod} test -run init stop`
+    FileUtils.rm_rf("test-db")
+    FileUtils.mkdir_p("test-db")
+    mnesia = '-mnesia dir \'"test-db"\''
+    test_output = `#{ERL} #{mnesia} -pa ebin -run #{mod} test -run init stop`
     puts test_output
   end
 end
