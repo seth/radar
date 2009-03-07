@@ -1,7 +1,15 @@
-* Define service record
+* TODO configure to use disk-based mnesia tables
+* TODO Implement service expiration
+* TODO benchmark mnesia query, consider adding indices
+* TODO implement service removal
+* TODO add mociweb REST interface
+Try to make XML compatible with what is used at Evri
+* TODO add otp application, supervision, logging
+understand how to make this HA using multiple Erlang nodes
+* DONE Define service record
 | Name   | Description                    | Type           | Default     |
 |--------+--------------------------------+----------------+-------------|
-| id     | hash of type and URL           | string         | -           |
+| id     | hash of type, group, and URL   | string         | -           |
 | type   | name of service type           | string         | -           |
 | group  | group name                     | string         | ""          |
 | proto  | protocal                       | string         | "http"      |
@@ -18,11 +26,7 @@
 Name	Description
 id	unique id based on hash of service type and URL
 
-  
-* Write an OTP server that does basic registration and lookup
-start()
-register({type, url}) -> ok | error
-find({type}) -> {type, url} | error
-* Figure out mochiweb
-* Learn XML parsing, building
-* Learn JSON parsing, building
+* Research
+** TODO Figure out mochiweb
+** TODO Learn XML parsing, building
+** TODO Learn JSON parsing, building
