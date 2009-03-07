@@ -12,7 +12,8 @@
 init_db() ->
     mnesia:create_schema([node()]),
     mnesia:start(),
-    mnesia:create_table(service,   [{attributes, record_info(fields, service)}]),
+    mnesia:create_table(service, [{disc_copies, [node()]}, 
+                                  {attributes, record_info(fields, service)}]),
     mnesia:stop().
 
 start() ->
@@ -27,7 +28,7 @@ add(Service) when is_record(Service, service) ->
     mnesia:transaction(F).
 
 remove(Service) when is_record(Service, service) ->
-    Oid = {service, Service},
+    Oid = {service, Service#service.id},
     F = fun() -> mnesia:delete(Oid) end, 
     mnesia:transaction(F).
 
@@ -69,6 +70,21 @@ do(Q) ->
 
 %% tests
 
+add_and_remove_test() ->
+    start(),
+    mnesia:clear_table(service),
+    Services = [
+                radar:make_service("us", "g1", "http://1", []),
+                radar:make_service("us", "g1", "http://2", [])
+               ],
+    [radar_db:add(S) || S <- Services],
+    [S1, S2|_] = Services,
+    ?assertEqual(2, length(find([], [], []))),
+    remove(S1),
+    ?assertEqual(1, length(find([], [], []))),
+    remove(S2),
+    ?assertEqual(0, length(find([], [], []))).
+    
 add_and_find_test_() ->
     SortedUrls = fun(L) ->
                          sort(map(fun radar:service_url/1, L)) end,
