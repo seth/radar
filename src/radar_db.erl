@@ -12,9 +12,8 @@
 init_db() ->
     mnesia:create_schema([node()]),
     mnesia:start(),
-    mnesia:create_table(service, [{disc_copies, [node()]}, 
-                                  {attributes, record_info(fields, service)}]),
-    mnesia:stop().
+    mnesia:create_table(service, [{disc_copies, [node()]},
+                                  {attributes, record_info(fields, service)}]).
 
 start() ->
     mnesia:start(),
@@ -70,54 +69,60 @@ do(Q) ->
 
 %% tests
 
-add_and_remove_test() ->
+setup_mnesia() ->
     init_db(),
     start(),
-    mnesia:clear_table(service),
-    Services = [
-                radar:make_service("us", "g1", "http://1", []),
-                radar:make_service("us", "g1", "http://2", [])
-               ],
-    [radar_db:add(S) || S <- Services],
-    [S1, S2|_] = Services,
-    ?assertEqual(2, length(find([], [], []))),
-    remove(S1),
-    ?assertEqual(1, length(find([], [], []))),
-    remove(S2),
-    ?assertEqual(0, length(find([], [], []))).
-    
+    mnesia:clear_table(service).
+
+add_and_remove_test() ->
+    {setup, fun setup_mnesia/0,
+     fun() ->
+             Services = [
+                         radar:make_service("us", "g1", "http://1", []),
+                         radar:make_service("us", "g1", "http://2", [])
+                        ],
+             [radar_db:add(S) || S <- Services],
+             [S1, S2|_] = Services,
+             ?assertEqual(2, length(find([], [], []))),
+             remove(S1),
+             ?assertEqual(1, length(find([], [], []))),
+             remove(S2),
+             ?assertEqual(0, length(find([], [], []))) end}.
+
 add_and_find_test_() ->
-    init_db(),
     SortedUrls = fun(L) ->
                          sort(map(fun radar:service_url/1, L)) end,
-    start(),
-    mnesia:clear_table(service),
-    Services = [
-                radar:make_service("us", "g1", "http://1", []),
-                radar:make_service("us", "g1", "http://2", []),
-                radar:make_service("us", "g2", "http://3", []),
-                radar:make_service("is", "g2", "http://4", []),
-                radar:make_service("is", "g3", "http://5", [{"foo", "bar"}])
-               ],
-    [radar_db:add(S) || S <- Services],
-    Tests = [
-             {{"", "", []}, ["http://1", "http://2", "http://3",
-                             "http://4", "http://5"]},
-             {{"none", "", []}, []},
-             {{"none", "g1", []}, []},
-             {{"", "none", []}, []},
-             {{"us", "none", []}, []},
-             {{"", "", [{a, b}]}, []},
-             {{"us", "g1", []}, ["http://1", "http://2"]},
-             {{"us", [], []}, ["http://1", "http://2", "http://3"]},
-             {{[], "g3", []}, ["http://5"]},
-             {{[], [], [{"foo", "bar"}]}, ["http://5"]},
-             {{[], "g3", [{"foo", "bar"}]}, ["http://5"]},
-             {{"is", [], [{"foo", "bar"}]}, ["http://5"]},
-             {{"is", "g3", [{"foo", "bar"}]}, ["http://5"]}
-            ],
-    [?_assertMatch(Expect, SortedUrls(find(Type, Group, Attrs)))
-     || {{Type, Group, Attrs}, Expect} <- Tests].
+    {setup,
+     fun() ->
+             setup_mnesia(),
+             Services = [
+                         radar:make_service("us", "g1", "http://1", []),
+                         radar:make_service("us", "g1", "http://2", []),
+                         radar:make_service("us", "g2", "http://3", []),
+                         radar:make_service("is", "g2", "http://4", []),
+                         radar:make_service("is", "g3", "http://5",
+                                            [{"foo", "bar"}])
+                        ],
+             [radar_db:add(S) || S <- Services] end,
+     fun() ->
+             Tests = [
+                      {{"", "", []}, ["http://1", "http://2", "http://3",
+                                      "http://4", "http://5"]},
+                      {{"none", "", []}, []},
+                      {{"none", "g1", []}, []},
+                      {{"", "none", []}, []},
+                      {{"us", "none", []}, []},
+                      {{"", "", [{a, b}]}, []},
+                      {{"us", "g1", []}, ["http://1", "http://2"]},
+                      {{"us", [], []}, ["http://1", "http://2", "http://3"]},
+                      {{[], "g3", []}, ["http://5"]},
+                      {{[], [], [{"foo", "bar"}]}, ["http://5"]},
+                      {{[], "g3", [{"foo", "bar"}]}, ["http://5"]},
+                      {{"is", [], [{"foo", "bar"}]}, ["http://5"]},
+                      {{"is", "g3", [{"foo", "bar"}]}, ["http://5"]}
+                     ],
+             [?_assertMatch(Expect, SortedUrls(find(Type, Group, Attrs)))
+              || {{Type, Group, Attrs}, Expect} <- Tests] end}.
 
 matches_attrs_test_() ->
     Tests = [
