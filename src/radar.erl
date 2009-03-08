@@ -11,7 +11,8 @@
 -import(erlang, [md5/1]).
 -include_lib("stdlib/include/qlc.hrl").
 %% API
--export([start_link/0, start/0, stop/0, register/1, find/3, test/0]).
+-export([start_link/0, start/0, stop/0, test/0]).
+-export([register/1, unregister/1, find/0, find/3]).
 -export([make_service/4, service_url/1]).
 
 %% gen_server callbacks
@@ -19,8 +20,6 @@
          terminate/2, code_change/3]).
 
 -include("service.hrl").
-
--record(state, {services = []}).
 
 %%====================================================================
 %% API
@@ -39,6 +38,12 @@ start_link() ->
 
 register(Service) when is_record(Service, service) ->
     gen_server:call(?MODULE, {register, Service}).
+
+unregister(Service) when is_record(Service, service) ->
+    gen_server:call(?MODULE, {unregister, Service}).
+
+find() ->
+    gen_server:call(?MODULE, {find, [], [], []}).
 
 find(Type, Group, Attrs) ->
     gen_server:call(?MODULE, {find, Type, Group, Attrs}).
@@ -79,7 +84,7 @@ make_service_id(Type, Group, Url) ->
 %%--------------------------------------------------------------------
 init([]) ->
     radar_db:start(),
-    {ok, #state{}}.
+    {ok, []}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -92,6 +97,9 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({register, Service}, _From, State) ->
     radar_db:add(Service),
+    {reply, ok, State};
+handle_call({unregister, Service}, _From, State) ->
+    radar_db:remove(Service),
     {reply, ok, State};
 handle_call({find, Type, Group, Attrs}, _From, State) ->
     Found = radar_db:find(Type, Group, Attrs),
