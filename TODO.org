@@ -1,7 +1,19 @@
-* TODO configure to use disk-based mnesia tables
+* DONE configure to use disk-based mnesia tables
+  CLOSED: [2009-03-06 Fri 21:43]
 * TODO Implement service expiration
+One way might be to use the gb_tree module and add expiration times as
+services are added.  But assuming processes really are cheap as
+advertised, an interesting and simple first-pass solution is to spawn
+a process for each service when registered that waits to remove it.
+It would need to check before removing that the expiry has not been
+updated.  There is also the problem that if the server crashes then
+these processes don't have a way to restart.  An eventually consistent
+approach could have a cleaner process that checks for expired
+processes once a minute, say, in addition to per service cleaners.
+* TODO figure out test fixtures in eunit
 * TODO benchmark mnesia query, consider adding indices
-* TODO implement service removal
+* DONE implement service removal
+  CLOSED: [2009-03-06 Fri 21:43]
 * TODO add mociweb REST interface
 Try to make XML compatible with what is used at Evri
 * TODO add otp application, supervision, logging
